@@ -1,0 +1,28 @@
+module Trader.IOU where
+
+data Currency
+ = CNY
+ | USD
+ | GBP
+    deriving (Eq, Show)
+
+template IOUProposal
+  with
+    iou: IOU
+  where
+    signatory iou.issuer
+    observer iou.owner
+    choice IOUProposal_Accept: ContractId IOU
+      controller iou.owner
+      do
+        create iou
+
+template IOU
+  with
+    issuer: Party
+    owner: Party
+    amount: Decimal
+    currency: Currency
+  where
+    signatory issuer, owner
+    ensure amount > 0.0

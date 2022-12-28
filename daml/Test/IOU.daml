@@ -1,0 +1,25 @@
+module Test.IOU where
+
+import Trader.IOU
+import Daml.Script
+
+test_iou_proposal = script do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+
+  submitMustFail bob $ createCmd IOU with
+    issuer = bob
+    owner = alice
+    amount = 100.0
+    currency = GBP
+
+  proposalCid <- submit bob $ createCmd IOUProposal with
+    iou = IOU with
+      issuer = bob
+      owner = alice
+      amount = 100.0
+      currency = GBP
+
+  submitMustFail bob $ exerciseCmd proposalCid IOUProposal_Accept
+  iouCid <- submit alice $ exerciseCmd proposalCid IOUProposal_Accept
+  submitMustFail bob $ archiveCmd proposalCid
