@@ -16,6 +16,7 @@ template Account
         amount: Decimal
       controller issuer
       do
+        assertMsg "The balance is insufficient for this transaction" (balance + amount >= 0.0)
         archive self
         create this with balance = balance + amount
 

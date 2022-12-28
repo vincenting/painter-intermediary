@@ -28,7 +28,8 @@ test_user_update_alias = script do
       balance = 1000.0
 
   submitMustFail alice $ exerciseCmd account Account_MakeTransaction with amount = -100.0
-  submit bank $ exerciseCmd account Account_MakeTransaction with amount = -100.0
+  account <- submit bank $ exerciseCmd account Account_MakeTransaction with amount = -100.0
+  submitMustFail bank $ exerciseCmd account Account_MakeTransaction with amount = -1000.0
 
   (cid, account) <- submit bank do
     createAndExerciseCmd (Helper with p = bank) (FetchAccountByKey (alice, bank))
