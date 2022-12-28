@@ -11,7 +11,7 @@ test_make_service_agreement = script do
   bank <- allocateParty("Bank")
 
   requirementCid <- submit alice $ createCmd LabourServiceRequirement with
-    owner = alice
+    owner =  alice
     intermediary = bank
     description = "This is the requirement"
     guarantee = 100.0
@@ -56,3 +56,32 @@ test_freeze_funds_after_agreement = script do
   (cid, account) <- submit bank do
     createAndExerciseCmd (AccountHelper with p = bank) (FetchAccountByKey (alice, bank))
   assert (account.balance == 700.0)
+
+test_full_lifecycle = script do
+  alice <- allocateParty("Alice")
+  bob <- allocateParty("Bob")
+  bank <- allocateParty("Bank")
+  
+  submit bank $ createCmd Account with username = alice, issuer = bank, balance = 1000.0
+  submit bank $ createCmd Account with username = bob, issuer = bank, balance = 1000.0
+
+  requirementCid <- submit alice $ createCmd LabourServiceRequirement with
+    owner = alice
+    intermediary = bank
+    description = "This is the requirement"
+    guarantee = 100.0
+    public = bob
+
+  quoteCid <- submit bob $ exerciseCmd requirementCid Make_LabourServiceQuote with
+    provider = bob
+    price = 300.0
+  
+  agreementCid <- submit alice $ exerciseCmd quoteCid LabourServiceQuote_Select
+  agreementCid <- submit bank $ exerciseCmd agreementCid LabourServiceAgreement_FreezeFunds
+  agreementCid <- submit bob $ exerciseCmd agreementCid LabourServiceAgreement_MarkReady
+  agreementCid <- submit alice $ exerciseCmd agreementCid LabourServiceAgreement_MarkReviewed
+  agreementCid <- submit bank $ exerciseCmd agreementCid LabourServiceAgreement_MakePayment
+
+  (cid, account) <- submit bank do
+    createAndExerciseCmd (AccountHelper with p = bank) (FetchAccountByKey (bob, bank))
+  assert (account.balance == 1300.0)

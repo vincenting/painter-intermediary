@@ -41,7 +41,7 @@ template LabourServiceQuote
     labourAgreement: LabourServiceAgreement
   where
     signatory provider
-    observer labourAgreement.requirement.owner, labourAgreement.requirement.intermediary
+    observer labourAgreement.requirement.owner
 
     choice LabourServiceQuote_Cancel: ()
       controller provider
@@ -60,7 +60,7 @@ data ServiceStatus
   = Pending
   | Ready_For_Work
   | Ready_For_Review
-  | Close
+  | Ready_For_Payment
     deriving (Show, Eq)
 
 
@@ -79,6 +79,8 @@ template LabourServiceAgreement
     choice LabourServiceAgreement_FreezeFunds: ContractId LabourServiceAgreement with
       controller requirement.intermediary
       do
+        assertMsg "Can't freee funds from participants multi time" (status == Pending)
+
         (userAccountCid, userAccount) <- createAndExercise
           (AccountHelper with p = requirement.intermediary) 
           (FetchAccountByKey (requirement.owner, requirement.intermediary))
@@ -90,3 +92,27 @@ template LabourServiceAgreement
         exercise labourAccountCid Account_MakeTransaction with amount = -(requirement.guarantee)
 
         create this with status = Ready_For_Work
+
+    choice LabourServiceAgreement_MarkReady: ContractId LabourServiceAgreement with
+      controller provider
+      do
+        assertMsg "Only can mark work done when it's ready for work" (status == Ready_For_Work)
+        create this with status = Ready_For_Review
+
+    choice LabourServiceAgreement_MarkReviewed: ContractId LabourServiceAgreement with
+      controller requirement.owner
+      do
+        assertMsg "Only can mark work reviewed when it's ready for review" (status == Ready_For_Review)
+        create this with status = Ready_For_Payment
+    
+    choice LabourServiceAgreement_MakePayment: () with
+      controller requirement.intermediary
+      do
+        assertMsg "Only can make payment when the work is reviewed" (status == Ready_For_Payment)
+
+        (labourAccountCid, labourAccount) <- createAndExercise
+          (AccountHelper with p = requirement.intermediary) 
+          (FetchAccountByKey (provider, requirement.intermediary))
+        exercise labourAccountCid Account_MakeTransaction with amount = (requirement.guarantee + price)
+  
+        return ()
