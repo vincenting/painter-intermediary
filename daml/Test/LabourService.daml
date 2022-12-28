@@ -1,0 +1,27 @@
+module Test.LabourService where
+
+import Trader.LabourService
+import Trader.IOU
+import Daml.Script
+
+test_make_service_agreement = script do
+  alice <- allocateParty("Alice")
+  bob <- allocateParty("Bob")
+  bank <- allocateParty("Bank")
+
+  requirementCid <- submit alice $ createCmd LabourServiceRequirement with
+    owner = alice
+    intermediary = bank
+    description = "This is the requirement"
+    guarantee = Cash with
+      amount = 100.0
+      currency = CNY
+    public = bob
+
+  quoteCid <- submit bob $ exerciseCmd requirementCid Make_LabourServiceQuote with
+    provider = bob
+    price = Cash with
+      amount = 300.0
+      currency = USD
+  
+  submit alice $ exerciseCmd quoteCid LabourServiceQuote_Select

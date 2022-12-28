@@ -6,6 +6,11 @@ data Currency
  | GBP
     deriving (Eq, Show)
 
+data Cash = Cash with
+  amount: Decimal
+  currency: Currency
+    deriving (Eq, Show)
+
 template IOUProposal
   with
     iou: IOU
@@ -22,12 +27,11 @@ template IOU
   with
     issuer: Party
     owner: Party
-    amount: Decimal
-    currency: Currency
+    cash: Cash
   where
     signatory issuer, owner
     observer owner
-    ensure amount > 0.0
+    ensure cash.amount > 0.0
 
     choice Make_IOUTransferProposal: ContractId IOUTransferProposal
       with newOwner: Party

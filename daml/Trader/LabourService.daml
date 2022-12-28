@@ -1,0 +1,66 @@
+module Trader.LabourService where
+
+import Trader.IOU
+
+template LabourServiceRequirement
+  with
+    owner: Party
+    intermediary: Party
+    public: Party
+    guarantee: Cash
+    description: Text
+  where
+    signatory owner
+    observer intermediary, public
+    ensure guarantee.amount > 0.0
+
+    choice Archives: ()
+      controller owner
+      do
+        return ()
+
+    nonconsuming choice Make_LabourServiceQuote: ContractId LabourServiceQuote with 
+        provider: Party
+        price: Cash
+      controller provider
+      do
+        create LabourServiceQuote with
+          provider
+          requirementCid = self
+          labourAgreement = LabourServiceAgreement with
+            provider
+            requirement = this
+            price
+
+
+template LabourServiceQuote
+  with
+    provider: Party
+    requirementCid: ContractId LabourServiceRequirement
+    labourAgreement: LabourServiceAgreement
+  where
+    signatory provider
+    observer labourAgreement.requirement.owner, labourAgreement.requirement.intermediary
+
+    choice LabourServiceQuote_Cancel: ()
+      controller provider
+      do
+        return ()
+    
+    choice LabourServiceQuote_Select: ContractId LabourServiceAgreement with
+      controller labourAgreement.requirement.owner
+      do
+        exercise requirementCid Archives
+        create labourAgreement
+
+
+template LabourServiceAgreement
+  with
+    requirement: LabourServiceRequirement
+    provider: Party
+    price: Cash
+  where
+    signatory (signatory requirement), provider
+    observer requirement.intermediary
+
+    ensure price.amount > 0.0
