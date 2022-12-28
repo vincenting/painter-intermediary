@@ -1,0 +1,35 @@
+module Test.User where
+
+import Trader.User
+import Daml.Script
+
+test_user_alias = script do
+  public <- allocateParty "Public"
+  alice <- allocateParty "Alice"
+
+  submit alice do
+    createCmd Trader.User.User with
+      alias = "Alice"
+      username = alice
+      public
+
+  (cid, user) <- submit public do
+    createAndExerciseCmd (Trader.User.Helper with p = public) (FetchUserByKey (alice, public))
+  assert (user.alias == "Alice")
+
+test_user_update_alias = script do
+  public <- allocateParty "Public"
+  alice <- allocateParty "Alice"
+
+  user <- submit alice do
+    createCmd Trader.User.User with
+      alias = "Alice"
+      username = alice
+      public
+
+  submitMustFail public $ exerciseCmd user Change with newAlias = "Jack"
+  submit alice $ exerciseCmd user Change with newAlias = "AliceT"
+
+  (cid, user) <- submit public do
+    createAndExerciseCmd (Trader.User.Helper with p = public) (FetchUserByKey (alice, public))
+  assert (user.alias == "AliceT")
