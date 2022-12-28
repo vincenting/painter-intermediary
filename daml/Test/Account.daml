@@ -1,0 +1,35 @@
+module Test.Account where
+
+import Trader.Account
+import Daml.Script
+
+test_user_alias = script do
+  bank <- allocateParty "Bank"
+  alice <- allocateParty "Alice"
+
+  submit bank do
+    createCmd Account with
+      username = alice
+      issuer = bank
+      balance = 1000.0
+
+  (cid, account) <- submit bank do
+    createAndExerciseCmd (Helper with p = bank) (FetchAccountByKey (alice, bank))
+  assert (account.balance == 1000.0)
+
+test_user_update_alias = script do
+  bank <- allocateParty "Bank"
+  alice <- allocateParty "Alice"
+
+  account <- submit bank do
+    createCmd Account with
+      username = alice
+      issuer = bank
+      balance = 1000.0
+
+  submitMustFail alice $ exerciseCmd account Account_MakeTransaction with amount = -100.0
+  submit bank $ exerciseCmd account Account_MakeTransaction with amount = -100.0
+
+  (cid, account) <- submit bank do
+    createAndExerciseCmd (Helper with p = bank) (FetchAccountByKey (alice, bank))
+  assert (account.balance == 900.0)

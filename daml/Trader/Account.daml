@@ -1,0 +1,31 @@
+module Trader.Account where
+
+template Account 
+  with
+    issuer: Party
+    username: Party
+    balance: Decimal
+  where
+    signatory issuer
+    observer username
+
+    key (username, issuer) : (Party, Party)
+    maintainer key._2
+
+    nonconsuming choice Account_MakeTransaction: ContractId Account with 
+        amount: Decimal
+      controller issuer
+      do
+        archive self
+        create this with balance = balance + amount
+
+
+template Helper
+  with
+    p: Party
+  where
+    signatory p
+    choice FetchAccountByKey: (ContractId Account, Account)
+      with userKey: (Party, Party)
+      controller p
+      do fetchByKey @Account userKey

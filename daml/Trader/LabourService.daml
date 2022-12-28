@@ -1,18 +1,16 @@
 module Trader.LabourService where
 
-import Trader.IOU
-
 template LabourServiceRequirement
   with
     owner: Party
     intermediary: Party
     public: Party
-    guarantee: Cash
+    guarantee: Decimal
     description: Text
   where
     signatory owner
     observer intermediary, public
-    ensure guarantee.amount > 0.0
+    ensure guarantee > 0.0
 
     choice Archives: ()
       controller owner
@@ -21,13 +19,14 @@ template LabourServiceRequirement
 
     nonconsuming choice Make_LabourServiceQuote: ContractId LabourServiceQuote with 
         provider: Party
-        price: Cash
+        price: Decimal
       controller provider
       do
         create LabourServiceQuote with
           provider
           requirementCid = self
           labourAgreement = LabourServiceAgreement with
+            status = Pending
             provider
             requirement = this
             price
@@ -47,20 +46,30 @@ template LabourServiceQuote
       do
         return ()
     
-    choice LabourServiceQuote_Select: ContractId LabourServiceAgreement with
+    choice LabourServiceQuote_Select: ContractId LabourServiceAgreement 
+      with
       controller labourAgreement.requirement.owner
       do
         exercise requirementCid Archives
         create labourAgreement
 
 
+data ServiceStatus
+  = Pending
+  | Ready_For_Work
+  | Ready_For_Review
+  | Close
+    deriving (Show, Eq)
+
+
 template LabourServiceAgreement
   with
     requirement: LabourServiceRequirement
     provider: Party
-    price: Cash
+    price: Decimal
+    status: ServiceStatus
   where
     signatory (signatory requirement), provider
     observer requirement.intermediary
 
-    ensure price.amount > 0.0
+    ensure price > 0.0
