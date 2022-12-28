@@ -23,3 +23,68 @@ test_iou_proposal = script do
   submitMustFail bob $ exerciseCmd proposalCid IOUProposal_Accept
   iouCid <- submit alice $ exerciseCmd proposalCid IOUProposal_Accept
   submitMustFail bob $ archiveCmd proposalCid
+
+test_transfer_iou = script do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  vincent <- allocateParty "Vincent"
+
+  proposalCid <- submit bob $ createCmd IOUProposal with
+    iou = IOU with
+      issuer = bob
+      owner = alice
+      amount = 100.0
+      currency = GBP
+  iouCid <- submit alice $ exerciseCmd proposalCid IOUProposal_Accept
+
+  transferCid <- submit alice $ exerciseCmd iouCid Make_IOUTransferProposal with
+    newOwner = vincent
+  iou2Cid <- submit vincent $ exerciseCmd transferCid IOUTransferProposal_Accept
+
+  Some iou2 <- queryContractId vincent iou2Cid
+  assert (iou2.owner == vincent)
+
+test_reject_iou = script do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  vincent <- allocateParty "Vincent"
+
+  proposalCid <- submit bob $ createCmd IOUProposal with
+    iou = IOU with
+      issuer = bob
+      owner = alice
+      amount = 100.0
+      currency = GBP
+  iouCid <- submit alice $ exerciseCmd proposalCid IOUProposal_Accept
+
+  transferCid <- submit alice $ exerciseCmd iouCid Make_IOUTransferProposal with
+    newOwner = vincent
+
+  submitMustFail alice $ exerciseCmd transferCid IOUTransferProposal_Reject
+  iou2Cid <- submit vincent $ exerciseCmd transferCid IOUTransferProposal_Reject
+  
+  Some iou2 <- queryContractId alice iou2Cid
+  assert (iou2.owner == alice)
+
+test_cancel_iou = script do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  vincent <- allocateParty "Vincent"
+
+  proposalCid <- submit bob $ createCmd IOUProposal with
+    iou = IOU with
+      issuer = bob
+      owner = alice
+      amount = 100.0
+      currency = GBP
+  iouCid <- submit alice $ exerciseCmd proposalCid IOUProposal_Accept
+
+  transferCid <- submit alice $ exerciseCmd iouCid Make_IOUTransferProposal with
+    newOwner = vincent
+
+  submitMustFail bob $ exerciseCmd transferCid IOUTransferProposal_Cancel
+  submitMustFail vincent $ exerciseCmd transferCid IOUTransferProposal_Cancel
+  iou2Cid <- submit alice $ exerciseCmd transferCid IOUTransferProposal_Cancel
+  
+  Some iou2 <- queryContractId alice iou2Cid
+  assert (iou2.owner == alice)
