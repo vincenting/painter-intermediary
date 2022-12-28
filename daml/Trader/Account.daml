@@ -21,7 +21,7 @@ template Account
         create this with balance = balance + amount
 
 
-template Helper
+template AccountHelper
   with
     p: Party
   where

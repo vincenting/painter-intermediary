@@ -14,7 +14,7 @@ test_user_alias = script do
       balance = 1000.0
 
   (cid, account) <- submit bank do
-    createAndExerciseCmd (Helper with p = bank) (FetchAccountByKey (alice, bank))
+    createAndExerciseCmd (AccountHelper with p = bank) (FetchAccountByKey (alice, bank))
   assert (account.balance == 1000.0)
 
 test_user_update_alias = script do
@@ -32,5 +32,5 @@ test_user_update_alias = script do
   submitMustFail bank $ exerciseCmd account Account_MakeTransaction with amount = -1000.0
 
   (cid, account) <- submit bank do
-    createAndExerciseCmd (Helper with p = bank) (FetchAccountByKey (alice, bank))
+    createAndExerciseCmd (AccountHelper with p = bank) (FetchAccountByKey (alice, bank))
   assert (account.balance == 900.0)

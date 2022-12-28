@@ -1,5 +1,7 @@
 module Trader.LabourService where
 
+import Trader.Account
+
 template LabourServiceRequirement
   with
     owner: Party
@@ -73,3 +75,18 @@ template LabourServiceAgreement
     observer requirement.intermediary
 
     ensure price > 0.0
+
+    choice LabourServiceAgreement_FreezeFunds: ContractId LabourServiceAgreement with
+      controller requirement.intermediary
+      do
+        (userAccountCid, userAccount) <- createAndExercise
+          (AccountHelper with p = requirement.intermediary) 
+          (FetchAccountByKey (requirement.owner, requirement.intermediary))
+        exercise userAccountCid Account_MakeTransaction with amount = -price
+
+        (labourAccountCid, labourAccount) <- createAndExercise
+          (AccountHelper with p = requirement.intermediary) 
+          (FetchAccountByKey (provider, requirement.intermediary))
+        exercise labourAccountCid Account_MakeTransaction with amount = -(requirement.guarantee)
+
+        create this with status = Ready_For_Work
