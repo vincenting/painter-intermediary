@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, Menu } from 'semantic-ui-react';
 import { PublicParty } from '../Credentials';
 import { userContext } from './App';
+import RequirementForm from './RequirementForm';
 
 type Props = {
   onLogout: () => void;
@@ -25,6 +26,17 @@ const MainScreen: React.FC<Props> = ({onLogout, getPublicParty}) => {
     query$.on("live", (result) => {
       setBankBalance(result.map(({ payload: { balance } }) => balance)
         .reduce((a, b) => a + +b, 0))
+    })
+
+    return () => query$.close()
+  }, [ledger, party, user.primaryParty]);
+
+  const [requirements, setRequirements] = useState<any[]>([]); 
+
+  useEffect(() => {
+    const query$ = ledger.streamQueries(Trader.LabourService.LabourServiceRequirement, [])
+    query$.on("live", (result) => {
+      setRequirements(result as any)
     })
 
     return () => query$.close()
@@ -56,6 +68,7 @@ const MainScreen: React.FC<Props> = ({onLogout, getPublicParty}) => {
           />
         </Menu.Menu>
       </Menu>
+      <RequirementForm getPublicParty={getPublicParty}/>
     </>
   );
 };
