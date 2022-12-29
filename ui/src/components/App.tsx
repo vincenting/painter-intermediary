@@ -2,14 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import DamlHub, {
+  damlHubLogout,
   isRunningOnHub,
   usePublicParty,
   usePublicToken
 } from "@daml/hub-react";
 import { createLedgerContext } from "@daml/react";
 import React from "react";
+import { authConfig } from "../config";
 import Credentials from "../Credentials";
 import LoginScreen from "./LoginScreen";
+import MainScreen from "./MainScreen";
 
 // Context for the party of the user.
 export const userContext = createLedgerContext();
@@ -59,7 +62,15 @@ const App: React.FC = () => {
           token={credentials.token}
           party={credentials.party}
           user={credentials.user}>
-          hello world
+          <MainScreen
+            getPublicParty={credentials.getPublicParty}
+            onLogout={() => {
+              if (authConfig.provider === "daml-hub") {
+                damlHubLogout();
+              }
+              setCredentials(undefined);
+            }}
+          />
         </userContext.DamlLedger>
       </Wrap>
     );

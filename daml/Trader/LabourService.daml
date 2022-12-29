@@ -24,6 +24,7 @@ template LabourServiceRequirement
         price: Decimal
       controller provider
       do
+        assertMsg "Requirement owners can not make quote for themselves" (owner /= provider)
         create LabourServiceQuote with
           provider
           requirementCid = self
