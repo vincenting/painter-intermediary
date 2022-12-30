@@ -3,11 +3,13 @@
 
 import { Trader } from '@daml.js/painter-intermediary';
 import React, { useEffect, useState } from 'react';
-import { Container, Image, Menu } from 'semantic-ui-react';
+import { Container, Divider, Image, Menu } from 'semantic-ui-react';
 import { PublicParty } from '../Credentials';
+import AgreementItem from './AgreementItem';
 import { userContext } from './App';
 import RequirementForm from './RequirementForm';
 import RequirementItem from './RequirementItem';
+
 
 type Props = {
   onLogout: () => void;
@@ -43,6 +45,18 @@ const MainScreen: React.FC<Props> = ({onLogout, getPublicParty}) => {
     return () => query$.close()
   }, [ledger, party, user.primaryParty]);
 
+  const [agreements, setAgreements] = useState<{ contractId: string, payload: Trader.LabourService.LabourServiceAgreement }[]>([]); 
+
+  useEffect(() => {
+    const query$ = ledger.streamQueries(Trader.LabourService.LabourServiceAgreement, [])
+    query$.on("change", (result) => {
+      console.log(result)
+      setAgreements(result as any)
+    })
+
+    return () => query$.close()
+  }, [ledger, party, user.primaryParty]);
+
   return (
     <>
       <Menu icon borderless>
@@ -58,7 +72,8 @@ const MainScreen: React.FC<Props> = ({onLogout, getPublicParty}) => {
         </Menu.Item>
         <Menu.Menu position='right' className='test-select-main-menu'>
           <Menu.Item position='right'>
-            You are logged in as {user.userId}. Balance: {bankBalance}
+            You are logged in as {user.userId}.
+            {bankBalance && `Balance: ${bankBalance}` }
           </Menu.Item>
           <Menu.Item
             position='right'
@@ -69,11 +84,23 @@ const MainScreen: React.FC<Props> = ({onLogout, getPublicParty}) => {
           />
         </Menu.Menu>
       </Menu>
-      <RequirementForm getPublicParty={getPublicParty}/>
+      {
+        bankBalance && <RequirementForm getPublicParty={getPublicParty} />
+      }
+
+      <Divider />
+      
       <Container textAlign='justified'>
-        
         {
-          requirements.map(({ contractId, payload }) => (
+          agreements && agreements.map(({ payload, contractId }) => (
+            <AgreementItem key={contractId} contractId={contractId} payload={payload} />
+          ))
+        }
+      </Container>
+      <Divider />
+      <Container textAlign='justified'>
+        {
+          bankBalance && requirements.map(({ contractId, payload }) => (
             <RequirementItem key={contractId} contractId={contractId} payload={payload} />
           ))
         }

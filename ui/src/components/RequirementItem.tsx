@@ -22,7 +22,7 @@ const RequirementItem: React.FC<Props> = ({ payload, contractId }) => {
   }, [ledger, payload.owner]);
 
   const [quote, setQuote] = useState('')
-  const [quotes, setQuotes] = useState<Trader.LabourService.LabourServiceQuote[]>([])
+  const [quotes, setQuotes] = useState<{ payload: Trader.LabourService.LabourServiceQuote, contractId: string }[]>([])
 
 
   const handleSubmitQuote = () => {
@@ -35,11 +35,15 @@ const RequirementItem: React.FC<Props> = ({ payload, contractId }) => {
   useEffect(() => {
     const query$ = ledger.streamQueries(Trader.LabourService.LabourServiceQuote, [{ requirementCid: contractId }])
     query$.on("change", (result) => {
-      setQuotes(result.map(({ payload }) => payload))
+      setQuotes(result as any)
     })
 
     return () => query$.close()
   }, [contractId, ledger, party]);
+
+  const chooseQuote = (quoteCid: string) => {
+    ledger.exercise(Trader.LabourService.LabourServiceQuote.LabourServiceQuote_Select, quoteCid as any, {})
+  }
 
   return (
     <Container style={{ paddingTop: 10, paddingBottom: 10}}>
@@ -57,7 +61,6 @@ const RequirementItem: React.FC<Props> = ({ payload, contractId }) => {
           </Grid>
 
         </Card.Meta>
-
         <Card.Content description={payload.description} />
         <Card.Content extra>
           <List divided relaxed>
@@ -66,8 +69,21 @@ const RequirementItem: React.FC<Props> = ({ payload, contractId }) => {
                 <List.Item key={idx}>
                   <List.Icon name='github' size='large' verticalAlign='middle' />
                   <List.Content>
-                    <List.Header>Quote: ${q.labourAgreement.price}</List.Header>
-                    <List.Description>Provider: ${q.provider}</List.Description>
+                    <Grid>
+                      <Grid.Row>
+                        <Grid.Column width={12}>
+                          <List.Header>Quote: ${q.payload.labourAgreement.price}</List.Header>
+                          <List.Description>Provider: ${q.payload.provider}</List.Description>
+                        </Grid.Column>
+                        <Grid.Column width={4}>
+                          {
+                            payload.owner === party && <Button onClick={() => {
+                              chooseQuote(q.contractId)
+                            }} primary>Choose</Button>
+                          }
+                        </Grid.Column>
+                      </Grid.Row>
+                    </Grid>
                   </List.Content>
                 </List.Item>
               ))
