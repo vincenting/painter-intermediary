@@ -37,8 +37,8 @@ const RequirementForm: React.FC<Props> = ({ getPublicParty }) => {
 
   const [formState, setFormState] = useState<{ guarantee?: string, description?: string, intermediary?: string }>({});
 
-  const handleSubmit = () => {
-    ledger.create(Trader.LabourService.LabourServiceRequirement, {
+  const handleSubmit = async () => {
+    await ledger.create(Trader.LabourService.LabourServiceRequirement, {
       owner: user.primaryParty as string,
       intermediary: formState.intermediary as string, 
       public: publicParty as string,

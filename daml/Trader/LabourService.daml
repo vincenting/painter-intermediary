@@ -14,7 +14,7 @@ template LabourServiceRequirement
     observer intermediary, public
     ensure guarantee > 0.0
 
-    choice Archives: ()
+    choice LabourServiceRequirement_Archives: ()
       controller owner
       do
         return ()
@@ -49,11 +49,16 @@ template LabourServiceQuote
       do
         return ()
     
+    choice LabourServiceQuote_Archives: ()
+      controller labourAgreement.requirement.owner
+      do
+        return ()
+
     choice LabourServiceQuote_Select: ContractId LabourServiceAgreement 
       with
       controller labourAgreement.requirement.owner
       do
-        exercise requirementCid Archives
+        exercise requirementCid LabourServiceRequirement_Archives
         create labourAgreement
 
 
